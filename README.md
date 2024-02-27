@@ -6,3 +6,4 @@
  - [Binary_Classification](https://github.com/hoya9802/Pytorch/blob/main/Binary_Classification.ipynb) : Implementation of simple binary tesk using simple data made by torch.randn() function
  - [Multiclass_Classification](https://github.com/hoya9802/Pytorch/blob/main/Multiclass_Classification.ipynb) : Implementation of multi label test using MNIST dataset on MLP 
  - [ShortVersion_of_MC](https://github.com/hoya9802/Pytorch/blob/main/ShortVersion_of_MC.ipynb) : Implement "Multiclass_Classification" code more concisely using "[functions.py](https://github.com/hoya9802/Pytorch/blob/main/functions.py)"
+ - [CNN](https://github.com/hoya9802/Pytorch/blob/main/CNN.ipynb) : Implement of Multi class test using CIFAR10/STL10 dataset on CNN
