@@ -1,5 +1,6 @@
 import torch
 from torch import nn, optim
+from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -7,13 +8,20 @@ import time
 
 DEVICE = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
-def Train(model, train_DL, val_DL, criterion, optimizer, epoch, BATCH_SIZE, TRAIN_RATIO, save_model_path, save_history_path):
+def Train(model, train_DL, val_DL, criterion, optimizer, epoch, BATCH_SIZE, TRAIN_RATIO, save_model_path, save_history_path, **kwargs):
+    if "LR_STEP" in kwargs:
+        scheduler = StepLR(opimizer, step_size = kwargs['LR_STEP'], gamma = kwargs["LR_GAMMA"])
+    else:
+        scheduler = None
+    
     loss_history = {'train':[], 'val':[]}
     acc_history = {'train':[], 'val':[]}
     best_loss = 9999
     
     for it in range(epoch):
         epoch_start = time.time()
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f'Epoch: {it+1}, current_LR = {current_lr}')
         model.train()
         train_loss, train_acc, _ = loss_epoch(model, train_DL, criterion, optimizer)
         loss_history['train'] += [train_loss]
@@ -26,16 +34,18 @@ def Train(model, train_DL, val_DL, criterion, optimizer, epoch, BATCH_SIZE, TRAI
             acc_history['val'] += [val_acc]
 
             if best_loss > val_loss:
-                hest_loss = val_loss
+                best_loss = val_loss
                 torch.save({'model':model,
                             'epo':it,
                             'optimizer':optimizer,
                             'scheduler':scheduler}, save_model_path)
+        if "LR_STEP" in kwargs:
+            scheduler.step()
         # print loss
         print(f"train loss: {round(train_loss,5)}, "
               f"val loss: {round(val_loss,5)} \n"
               f"train acc: {round(train_acc,1)} %, "
-              f"val acc: {round(val_acc,1)} %, time: {round(time.time()-epoch_start()} s")
+              f"val acc: {round(val_acc,1)} %, time: {round(time.time()-epoch_start())} s")
         print('='*30)
 
     torch.save({'loss_history': loss_history,
@@ -97,6 +107,21 @@ def Test_plot(model, test_DL):
         pred_class = test_DL.dataset.classes[pred[idx]]
         true_class = test_DL.dataset.classes[y_batch[idx]]
         plt.title(f'({pred_class}) ({true_class})', color='g' if pred_class==true_class else 'r')
+
+def im_plot(DL):
+    x_batch, y_batch = next(iter(DL))
+    plt.figure(figsize=(8,4))
+
+    for idx in range(6):
+        im = x_batch[idx]
+        im = im - im.min()  # for imshow clipping
+        im = im/im.max()    # for imshow clipping
+        
+        plt.subplot(2,3, idx+1, xticks=[], yticks=[])
+        plt.imshow(im.permute(1,2,0).squeeze())
+        true_class = DL.dataset.classes[y_batch[idx]]
+        plt.title(true_class, color='g')
+    print(f'x_batch size = {x_batch.shape}')
  
 def count_params(model):
     num = sum([p.numel() for p in model.parameters() if p.requires_grad])
